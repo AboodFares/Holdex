@@ -1,0 +1,36 @@
+{
+  "name": "holdex",
+  "version": "1.0.0",
+  "description": "Lock your tokens until a date or price target",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
+    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+    "@solana/spl-token": "^0.4.14",
+    "@solana/wallet-adapter-base": "^0.9.27",
+    "@solana/wallet-adapter-phantom": "^0.9.29",
+    "@solana/wallet-adapter-react": "^0.15.39",
+    "@solana/wallet-adapter-react-ui": "^0.9.39",
+    "@solana/wallet-adapter-wallets": "^0.19.38",
+    "@solana/web3.js": "^1.98.4",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "buffer": "^6.0.3",
+    "dayjs": "^1.11.20",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "stream-browserify": "^3.0.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.10",
+    "vite-plugin-node-polyfills": "^0.26.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0"
+  }
+}
