@@ -10,10 +10,13 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       nodePolyfills({
-        include: ["buffer", "stream", "crypto"],
-        globals: { Buffer: true, process: true },
+        include: ["buffer", "stream", "crypto", "util", "process"],
+        globals: { Buffer: true, process: true, global: true },
       }),
     ],
+    define: {
+      global: "globalThis",
+    },
     server: {
       proxy: {
         "/rpc": {
