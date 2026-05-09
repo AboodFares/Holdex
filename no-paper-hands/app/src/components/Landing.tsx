@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Hls from "hls.js";
 import { AuthModal } from "./AuthModal";
@@ -8,24 +8,28 @@ const HLS_SRC = "https://stream.mux.com/4IMYGcL01xjs7ek5ANO17JC4VQVUTsojZlnw4fXz
 
 const FAQS = [
   {
-    q: "Is this non-custodial?",
-    a: "Yes. Your tokens are held in a PDA vault controlled entirely by the on-chain program. We have zero admin keys or override capability.",
+    q: "Can I unlock early if I change my mind?",
+    a: "No — and that's the point. The smart contract has no admin key, no back door, and no override. Once you lock, only the condition you set (date or price) can release your tokens.",
   },
   {
-    q: "What tokens can I lock?",
-    a: "Any SPL token or Token-2022 token on Solana mainnet — memecoins, governance tokens, LP positions, anything.",
+    q: "Who holds my tokens while they're locked?",
+    a: "Nobody. Your tokens sit in a program-derived vault on Solana. We have zero custody — no private keys, no multisig, no ability to touch your funds.",
   },
   {
-    q: "What happens when the lock expires?",
-    a: "You can withdraw your tokens directly from the extension. The smart contract enforces the condition — no one can release them before then, not even us.",
+    q: "What happens when my lock condition is met?",
+    a: "The app detects it automatically. A withdraw button becomes active and you claim your tokens in one tap — no waiting, no approval needed.",
   },
   {
-    q: "Can I set both a time and a price target?",
-    a: "Yes. You can lock until a specific date, until a price target is hit, or unlock when either condition is met first.",
+    q: "Which tokens are supported?",
+    a: "Any SPL or Token-2022 token on Solana mainnet. Memecoins, governance tokens, LP tokens — if it's in your wallet, you can lock it.",
   },
   {
-    q: "Do I need an account?",
-    a: "No account is required to use the extension. Signing in lets you track your locks across devices.",
+    q: "Can I set a price target AND a date at the same time?",
+    a: "Yes. Pick 'either condition' mode and your tokens unlock whichever comes first — great if you want a safety net on time but also want to catch a price pump.",
+  },
+  {
+    q: "Is there a fee?",
+    a: "No protocol fee. You only pay the standard Solana transaction fee (a fraction of a cent) when locking or withdrawing.",
   },
 ];
 
@@ -78,21 +82,59 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
   );
 }
 
+function FeatureCard({ icon, title, description, items, delay, highlight }: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  items: string[];
+  delay: number;
+  highlight?: boolean;
+}) {
+  const [inView, setInView] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setInView(true); obs.disconnect(); } },
+      { threshold: 0.15 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className={`land-feature-card ${highlight ? "land-feature-card-highlight" : ""} ${inView ? "in-view" : ""}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      <div className="land-feature-icon">{icon}</div>
+      <h3>{title}</h3>
+      <p>{description}</p>
+      <ul className="land-feature-list">
+        {items.map((item, i) => <li key={i}>{item}</li>)}
+      </ul>
+    </div>
+  );
+}
+
 const SCREENS = [
   {
     src: "/screenshot-home.png",
-    title: "Your portfolio at a glance",
-    desc: "See every token, its live USD value, and how much you've locked — all in one screen.",
+    title: "Your portfolio",
+    desc: "Every token. Live prices. All locked value in one view.",
   },
   {
     src: "/screenshot-lock.png",
     title: "Lock in seconds",
-    desc: "Pick a token, set a date or price target, and confirm with one tap. No forms, no friction.",
+    desc: "Pick a token, set a target, confirm. Done.",
   },
   {
     src: "/screenshot-activity.png",
     title: "Track every move",
-    desc: "A full timeline of sends, receives, locks and unlocks grouped by day — just like a real wallet.",
+    desc: "Sends, receives, locks — grouped by day.",
   },
 ];
 
@@ -124,24 +166,105 @@ function ScreenCol({ src, title, desc, delay }: { src: string; title: string; de
   );
 }
 
+function HoldexLogo({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="holdex-grad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#9945FF"/>
+          <stop offset="100%" stopColor="#14F195"/>
+        </linearGradient>
+      </defs>
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+        stroke="url(#holdex-grad)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+        stroke="url(#holdex-grad)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+const SOL_MINT = "So11111111111111111111111111111111111111112";
+
+function SolanaCard() {
+  const [price, setPrice] = useState<string | null>(null);
+  const [change, setChange] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch(`https://api.dexscreener.com/tokens/v1/solana/${SOL_MINT}`)
+      .then(r => r.json())
+      .then((pairs: Array<{ priceUsd?: string; priceChange?: { h24?: number } }>) => {
+        const p = pairs?.[0];
+        if (p?.priceUsd) setPrice(parseFloat(p.priceUsd).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        if (p?.priceChange?.h24 != null) setChange(p.priceChange.h24);
+      })
+      .catch(() => {});
+  }, []);
+
+  return (
+    <div className="sol-card" tabIndex={0}>
+      <svg className="sol-img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 397.7 311.7">
+        <defs>
+          <linearGradient id="sol-a" x1="90.9" y1="319.9" x2="296.5" y2="-6.4" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="#9945ff"/><stop offset=".91" stopColor="#14f195"/>
+          </linearGradient>
+          <linearGradient id="sol-b" x1="90.9" y1="319.9" x2="296.5" y2="-6.4" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="#9945ff"/><stop offset=".91" stopColor="#14f195"/>
+          </linearGradient>
+          <linearGradient id="sol-c" x1="90.9" y1="319.9" x2="296.5" y2="-6.4" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="#9945ff"/><stop offset=".91" stopColor="#14f195"/>
+          </linearGradient>
+        </defs>
+        <path fill="url(#sol-a)" d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1l62.7-62.7z"/>
+        <path fill="url(#sol-b)" d="M64.6 3.8C67.1 1.4 70.4 0 73.8 0h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8z"/>
+        <path fill="url(#sol-c)" d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z"/>
+      </svg>
+      <div className="sol-textBox">
+        <p className="sol-head">Solana</p>
+        <span className="sol-tag">Cryptocurrency</span>
+        <p className="sol-price">
+          <span className="sol-currency">$</span>
+          {price ?? "—"}
+        </p>
+        {change != null && (
+          <span className={`sol-change ${change >= 0 ? "pos" : "neg"}`}>
+            {change >= 0 ? "▲" : "▼"} {Math.abs(change).toFixed(2)}% 24h
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function Landing() {
   const navigate   = useNavigate();
   const { user, signOut } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
+  const [navHidden, setNavHidden] = useState(false);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      setNavHidden(y > 80 && y > lastScrollY.current);
+      lastScrollY.current = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <div className="land-root">
 
       {/* ── Nav ── */}
-      <nav className="land-nav">
+      <nav className={`land-nav ${navHidden ? "land-nav-hidden" : ""}`}>
         <div className="land-logo">
-          <span className="land-logo-icon">◆</span>
+          <HoldexLogo size={22} />
           <span className="land-logo-text">Holdex</span>
         </div>
 
         <div className="land-nav-pill">
-          <a href="#features">Features</a>
-          <a href="#faq">FAQ</a>
+          <button className="land-nav-link" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}>Features</button>
+          <button className="land-nav-link" onClick={() => document.getElementById("faq")?.scrollIntoView({ behavior: "smooth" })}>FAQ</button>
           <button className="land-nav-cta" onClick={() => navigate("/app")}>Launch App ↗</button>
         </div>
 
@@ -173,14 +296,16 @@ export function Landing() {
             <span className="land-orange">Hold</span> Tokens
           </h1>
           <p className="land-sub">
-            Commit your Solana tokens on-chain until a date or price target.
-            No early exits. No paper hands. Your future self will thank you.
+            Lock your Solana tokens until a date or price you believe in.
+            The smart contract holds the line — so you don't have to.
           </p>
           <div className="land-hero-btns">
             <button className="land-btn-download land-btn-soon" disabled>
               ↓ Chrome Extension — Coming Soon
             </button>
-            <button className="land-cta-circle" onClick={() => navigate("/app")}>↗</button>
+            <button className="land-btn-launch" onClick={() => navigate("/app")}>
+              Launch App ↗
+            </button>
           </div>
         </div>
       </section>
@@ -191,33 +316,31 @@ export function Landing() {
         <h2 className="land-section-title">Lock tokens. Build discipline.</h2>
 
         <div className="land-feature-cards">
-          <div className="land-feature-card">
-            <div className="land-feature-icon">⏱</div>
-            <h3>Time Locks</h3>
-            <p>
-              Set an exact date and time for your tokens to unlock. Perfect for vesting schedules,
-              long-term holds, or removing the temptation to sell early.
-            </p>
-            <ul className="land-feature-list">
-              <li>Pick any future date & time</li>
-              <li>On-chain enforcement — no override possible</li>
-              <li>Multiple locks per token</li>
-            </ul>
-          </div>
-
-          <div className="land-feature-card land-feature-card-highlight">
-            <div className="land-feature-icon">📈</div>
-            <h3>Price Targets</h3>
-            <p>
-              Lock until your token hits a specific USD price. Stop yourself from selling at
-              the bottom and let the market come to you.
-            </p>
-            <ul className="land-feature-list">
-              <li>Set any USD price target</li>
-              <li>Unlock when market price is reached</li>
-              <li>Or combine with a time lock (either condition)</li>
-            </ul>
-          </div>
+          <FeatureCard
+            icon={
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            }
+            title="Time Locks"
+            description="Set a date. Walk away. The contract holds the line so you don't have to."
+            items={["Any future date & time", "Zero override — ever", "Stack multiple locks per token"]}
+            delay={0}
+          />
+          <FeatureCard
+            icon={
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+                <polyline points="16 7 22 7 22 13"/>
+              </svg>
+            }
+            title="Price Targets"
+            description="Pick the number you believe in. Tokens stay locked until the market gets there."
+            items={["Any USD price target", "Auto-unlocks on hit", "Combine with a time lock"]}
+            delay={120}
+            highlight
+          />
         </div>
       </section>
 
@@ -235,18 +358,58 @@ export function Landing() {
 
       {/* ── FAQ ── */}
       <section id="faq" className="land-faq">
-        <div className="land-section-label">FAQ</div>
-        <h2 className="land-section-title">Common questions</h2>
-        <div className="land-faq-list">
-          {FAQS.map((f, i) => <FaqItem key={i} index={i} q={f.q} a={f.a} />)}
+        <div className="land-faq-inner">
+          <div className="land-faq-left">
+            <div className="land-section-label">FAQ</div>
+            <div className="land-faq-list">
+              {FAQS.map((f, i) => <FaqItem key={i} index={i} q={f.q} a={f.a} />)}
+            </div>
+          </div>
+          <div className="land-faq-right">
+            <SolanaCard />
+          </div>
         </div>
       </section>
 
       {/* ── Footer ── */}
       <footer className="land-footer">
-        <span className="land-logo-icon">◆</span>
-        <span>Holdex · Diamond hands, enforced on-chain.</span>
-        <a href="https://github.com/AboodFares/Holdex" target="_blank" rel="noreferrer">GitHub</a>
+        <div className="land-footer-top">
+          <div className="land-footer-brand">
+            <div className="land-footer-logo">
+              <HoldexLogo size={20} />
+              <span className="land-logo-text">Holdex</span>
+            </div>
+            <p className="land-footer-tagline">Diamond hands, enforced on-chain.<br />Built on Solana.</p>
+          </div>
+
+          <div className="land-footer-links">
+            <div className="land-footer-col">
+              <div className="land-footer-col-title">Product</div>
+              <button className="land-footer-link" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}>Features</button>
+              <button className="land-footer-link" onClick={() => document.getElementById("faq")?.scrollIntoView({ behavior: "smooth" })}>FAQ</button>
+              <button className="land-footer-link" onClick={() => navigate("/app")}>Launch App</button>
+            </div>
+            <div className="land-footer-col">
+              <div className="land-footer-col-title">Developers</div>
+              <a className="land-footer-link" href="https://github.com/AboodFares/Holdex" target="_blank" rel="noreferrer">GitHub</a>
+              <a className="land-footer-link" href="https://docs.solana.com" target="_blank" rel="noreferrer">Solana Docs</a>
+              <a className="land-footer-link" href="https://anchor-lang.com" target="_blank" rel="noreferrer">Anchor</a>
+            </div>
+            <div className="land-footer-col">
+              <div className="land-footer-col-title">Community</div>
+              <a className="land-footer-link" href="https://twitter.com" target="_blank" rel="noreferrer">Twitter / X</a>
+              <a className="land-footer-link" href="https://discord.com" target="_blank" rel="noreferrer">Discord</a>
+            </div>
+          </div>
+        </div>
+
+        <div className="land-footer-bottom">
+          <span>© 2026 Holdex. All rights reserved.</span>
+          <div className="land-footer-legal">
+            <span>Privacy Policy</span>
+            <span>Terms of Service</span>
+          </div>
+        </div>
       </footer>
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
