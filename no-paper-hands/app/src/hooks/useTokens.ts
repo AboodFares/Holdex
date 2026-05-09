@@ -6,7 +6,7 @@ import type { TokenInfo } from "../types";
 
 const RPC_ENDPOINT = import.meta.env.DEV
   ? `${window.location.origin}/rpc`
-  : "https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_KEY}";
+  : `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_KEY}`;
 
 const DEXSCREENER_URL = "https://api.dexscreener.com/tokens/v1/solana";
 const WSOL_MINT       = "So11111111111111111111111111111111111111112";
@@ -16,9 +16,10 @@ type DexPair = {
   priceUsd?: string;
   liquidity?: { usd?: number };
   info?: { imageUrl?: string };
+  priceChange?: { h24?: number };
 };
 
-type DexData = { price: number; name: string; symbol: string; image: string };
+type DexData = { price: number; name: string; symbol: string; image: string; change24h: number };
 
 // DexScreener allows up to 30 addresses per call
 async function getDexData(mints: string[]): Promise<Record<string, DexData>> {
@@ -37,10 +38,11 @@ async function getDexData(mints: string[]): Promise<Record<string, DexData>> {
         if (!out[addr] || liq > out[addr]._liq) {
           out[addr] = {
             price,
-            name:   p.baseToken.name,
-            symbol: p.baseToken.symbol,
-            image:  p.info?.imageUrl ?? "",
-            _liq:   liq,
+            name:     p.baseToken.name,
+            symbol:   p.baseToken.symbol,
+            image:    p.info?.imageUrl ?? "",
+            change24h: p.priceChange?.h24 ?? 0,
+            _liq:     liq,
           };
         }
       }
@@ -67,27 +69,27 @@ export function useTokens() {
       const lamports = await conn.getBalance(publicKey);
       const solBal   = lamports / 1e9;
 
-      // 2. SPL token accounts
-      let splRaw: { mint: string; decimals: number; rawBalance: bigint; uiBalance: number }[] = [];
-      try {
-        const [res, res2022] = await Promise.all([
-          conn.getParsedTokenAccountsByOwner(publicKey, { programId: TOKEN_PROGRAM_ID }),
-          conn.getParsedTokenAccountsByOwner(publicKey, { programId: TOKEN_2022_PROGRAM_ID }),
-        ]);
-        splRaw = [...res.value, ...res2022.value]
-          .map((a) => {
-            const i = a.account.data.parsed.info;
-            return {
-              mint:       i.mint                        as string,
-              decimals:   i.tokenAmount.decimals         as number,
-              rawBalance: BigInt(i.tokenAmount.amount    as string),
-              uiBalance:  (i.tokenAmount.uiAmount ?? 0) as number,
-            };
-          })
-          .filter((t) => t.uiBalance > 0);
-      } catch (e) {
-        console.warn("[useTokens] SPL fetch failed:", e);
-      }
+      // 2. SPL token accounts — fetch independently so one failure doesn't wipe both
+      const mapAccounts = (accounts: Awaited<ReturnType<typeof conn.getParsedTokenAccountsByOwner>>["value"], prog: "spl" | "token2022") =>
+        accounts.map((a) => {
+          const i = a.account.data.parsed.info;
+          return {
+            mint:         i.mint                        as string,
+            decimals:     Math.max(0, Math.min(255, Number(i.tokenAmount.decimals) || 0)),
+            rawBalance:   BigInt(i.tokenAmount.amount   as string),
+            uiBalance:    (i.tokenAmount.uiAmount ?? 0) as number,
+            tokenProgram: prog,
+          };
+        });
+
+      const [res, res2022] = await Promise.all([
+        conn.getParsedTokenAccountsByOwner(publicKey, { programId: TOKEN_PROGRAM_ID }).catch(() => ({ value: [] as never[] })),
+        conn.getParsedTokenAccountsByOwner(publicKey, { programId: TOKEN_2022_PROGRAM_ID }).catch(() => ({ value: [] as never[] })),
+      ]);
+      const splRaw = [
+        ...mapAccounts(res.value, "spl"),
+        ...mapAccounts(res2022.value, "token2022"),
+      ].filter((t) => t.uiBalance > 0);
 
       // 3. Fetch prices + metadata from DexScreener
       const allMints = [WSOL_MINT, ...splRaw.map((t) => t.mint)];
@@ -99,15 +101,17 @@ export function useTokens() {
 
       if (solBal > 0) {
         result.push({
-          mint:       WSOL_MINT,
-          symbol:     "SOL",
-          name:       "Solana",
-          logo:       solDex?.image ?? "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png",
-          decimals:   9,
-          rawBalance: BigInt(lamports),
-          uiBalance:  solBal,
-          priceUsd:   solPrice,
-          valueUsd:   solBal * solPrice,
+          mint:           WSOL_MINT,
+          symbol:         "SOL",
+          name:           "Solana",
+          logo:           solDex?.image ?? "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png",
+          decimals:       9,
+          rawBalance:     BigInt(lamports),
+          uiBalance:      solBal,
+          priceUsd:       solPrice,
+          valueUsd:       solBal * solPrice,
+          priceChange24h: solDex?.change24h ?? 0,
+          tokenProgram:   "spl",
         });
       }
 
@@ -115,19 +119,21 @@ export function useTokens() {
         const d = dex[t.mint];
         const p = d?.price ?? 0;
         result.push({
-          mint:       t.mint,
-          symbol:     d?.symbol  ?? t.mint.slice(0, 5) + "…",
-          name:       d?.name    ?? "Unknown Token",
-          logo:       d?.image   ?? "",
-          decimals:   t.decimals,
-          rawBalance: t.rawBalance,
-          uiBalance:  t.uiBalance,
-          priceUsd:   p,
-          valueUsd:   t.uiBalance * p,
+          mint:           t.mint,
+          symbol:         d?.symbol   ?? t.mint.slice(0, 5) + "…",
+          name:           d?.name     ?? "Unknown Token",
+          logo:           d?.image    ?? "",
+          decimals:       t.decimals,
+          rawBalance:     t.rawBalance,
+          uiBalance:      t.uiBalance,
+          priceUsd:       p,
+          valueUsd:       t.uiBalance * p,
+          priceChange24h: d?.change24h ?? 0,
+          tokenProgram:   t.tokenProgram,
         });
       }
 
-      const filtered = result.filter((t) => t.mint === WSOL_MINT || t.valueUsd >= 0.1);
+      const filtered = result.filter((t) => t.mint === WSOL_MINT || t.valueUsd >= 0.01);
 
       filtered.sort((a, b) => {
         if (a.mint === WSOL_MINT) return -1;

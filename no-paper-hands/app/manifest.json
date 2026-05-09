@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Holdex",
+  "version": "1.0.0",
+  "description": "Lock your Solana tokens on-chain until a date or price target.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Holdex"
+  },
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://*.helius-rpc.com/*",
+    "https://api.helius.xyz/*",
+    "https://api.dexscreener.com/*",
+    "https://*.supabase.co/*",
+    "https://tokens.jup.ag/*",
+    "https://api.jup.ag/*"
+  ]
+}

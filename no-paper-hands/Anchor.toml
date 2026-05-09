@@ -10,11 +10,14 @@ no_paper_hands = "ErTKtbuVhqLH8fp4Kp38ek8cRBJvN79eDk4E6Qc3QtZw"
 [programs.devnet]
 no_paper_hands = "ErTKtbuVhqLH8fp4Kp38ek8cRBJvN79eDk4E6Qc3QtZw"
 
+[programs.mainnet]
+no_paper_hands = "ErTKtbuVhqLH8fp4Kp38ek8cRBJvN79eDk4E6Qc3QtZw"
+
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "devnet"
+cluster = "mainnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

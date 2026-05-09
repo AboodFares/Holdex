@@ -36,12 +36,14 @@ function shortMint(mint: string) {
 
 export function TokenList({ tokens, loading, error, onRetry, selectedMint, onSelect }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
+  const copyTimer = { current: 0 };
 
   function copyMint(e: React.MouseEvent, mint: string) {
     e.stopPropagation();
     navigator.clipboard.writeText(mint).then(() => {
+      clearTimeout(copyTimer.current);
       setCopied(mint);
-      setTimeout(() => setCopied(null), 1500);
+      copyTimer.current = window.setTimeout(() => setCopied(null), 1500);
     });
   }
 

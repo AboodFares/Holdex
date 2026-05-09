@@ -14,6 +14,8 @@ export interface TokenInfo {
   uiBalance: number;
   priceUsd: number;
   valueUsd: number;
+  priceChange24h: number;
+  tokenProgram: "spl" | "token2022";
 }
 
 export interface LockEntry {

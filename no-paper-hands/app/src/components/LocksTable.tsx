@@ -160,49 +160,35 @@ function LockRow({ lock, tokenMap, currentPrices, onUnlock, loading }: {
 }
 
 export function LocksTable({ locks, tokenMap, currentPrices, onUnlock, loading }: Props) {
+  if (locks.length === 0) {
+    return <div className="ph-empty">No active locks</div>;
+  }
   return (
     <div className="locks-section">
-      <div className="card">
-        <div className="card-header">
-          <span className="card-title">
-            Active Locks
-            {locks.length > 0 && <span className="badge">{locks.length}</span>}
-          </span>
-        </div>
-        <div className="locks-table-wrap">
-          {locks.length === 0 ? (
-            <div className="empty-state">
-              <div className="icon">💎</div>
-              <p>No active locks. Select a token and lock it above.</p>
-            </div>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Token</th>
-                  <th>Amount</th>
-                  <th>Type</th>
-                  <th>Condition</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {locks.map((lock) => (
-                  <LockRow
-                    key={lock.lockIndex.toString()}
-                    lock={lock}
-                    tokenMap={tokenMap}
-                    currentPrices={currentPrices}
-                    onUnlock={onUnlock}
-                    loading={loading}
-                  />
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th>Amount</th>
+            <th>Type</th>
+            <th>Condition</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {locks.map((lock) => (
+            <LockRow
+              key={lock.lockIndex.toString()}
+              lock={lock}
+              tokenMap={tokenMap}
+              currentPrices={currentPrices}
+              onUnlock={onUnlock}
+              loading={loading}
+            />
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

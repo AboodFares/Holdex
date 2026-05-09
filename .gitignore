@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# Claude Code
+.claude/
+
+# Build outputs
+no-paper-hands/app/dist/
+no-paper-hands/app/dist-extension/
+
+# Dependencies
+node_modules/

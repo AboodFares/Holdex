@@ -7,6 +7,7 @@ import {
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
 import "@solana/wallet-adapter-react-ui/styles.css";
+import { AuthProvider } from "./context/AuthContext";
 import { Dashboard } from "./components/Dashboard";
 import { Landing } from "./components/Landing";
 
@@ -22,10 +23,12 @@ export default function App() {
       <ConnectionProvider endpoint={RPC}>
         <WalletProvider wallets={wallets} autoConnect>
           <WalletModalProvider>
-            <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route path="/app" element={<Dashboard />} />
-            </Routes>
+            <AuthProvider>
+              <Routes>
+                <Route path="/" element={<Landing />} />
+                <Route path="/app" element={<Dashboard />} />
+              </Routes>
+            </AuthProvider>
           </WalletModalProvider>
         </WalletProvider>
       </ConnectionProvider>

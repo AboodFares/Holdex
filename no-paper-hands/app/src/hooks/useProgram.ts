@@ -1,23 +1,22 @@
 import { useMemo } from "react";
 import { Program, AnchorProvider, BN, Idl } from "@coral-xyz/anchor";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { Connection, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from "@solana/spl-token";
 import { IDL } from "../idl";
 import type { LockEntry, LockType } from "../types";
 
-const PROGRAM_ID   = new PublicKey("ErTKtbuVhqLH8fp4Kp38ek8cRBJvN79eDk4E6Qc3QtZw");
-// Program lives on devnet; we use a dedicated connection regardless of display network
-const devnetConn   = new Connection("https://api.devnet.solana.com", "confirmed");
+const PROGRAM_ID = new PublicKey("ErTKtbuVhqLH8fp4Kp38ek8cRBJvN79eDk4E6Qc3QtZw");
 
 export function useProgram() {
   const wallet = useWallet();
+  const { connection } = useConnection();
 
   const program = useMemo(() => {
     if (!wallet.publicKey) return null;
-    const provider = new AnchorProvider(devnetConn, wallet as never, { commitment: "confirmed" });
+    const provider = new AnchorProvider(connection, wallet as never, { commitment: "confirmed" });
     return new Program(IDL as unknown as Idl, provider);
-  }, [wallet]);
+  }, [wallet.publicKey, connection]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const indexBytes = (lockIndex: bigint) =>
     new BN(lockIndex.toString()).toArrayLike(Buffer, "le", 8);

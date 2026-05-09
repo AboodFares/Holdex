@@ -13,7 +13,8 @@ export function PortfolioHero({ tokens, locks, tokenMap }: Props) {
     const t = tokenMap[l.mint];
     if (!t) return s;
     const ui = Number(l.amount) / 10 ** t.decimals;
-    return s + ui * t.priceUsd;
+    const val = ui * (t.priceUsd || 0);
+    return s + (isFinite(val) ? val : 0);
   }, 0);
 
   const fmt = (n: number) =>
