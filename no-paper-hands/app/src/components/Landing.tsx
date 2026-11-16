@@ -31,13 +31,50 @@ const FAQS = [
   },
 ];
 
+const PARTICLES = Array.from({ length: 36 }, (_, i) => ({
+  left: (i * 37) % 100,
+  size: 2 + (i % 3),
+  delay: -((i * 1.7) % 14),
+  dur: 10 + (i % 7) * 2,
+  drift: ((i % 5) - 2) * 18,
+}));
+
 function VideoBackground() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let raf = 0;
+    const onMove = (e: PointerEvent) => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const r = el.getBoundingClientRect();
+        el.style.setProperty("--mx", `${e.clientX - r.left}px`);
+        el.style.setProperty("--my", `${e.clientY - r.top}px`);
+      });
+    };
+    window.addEventListener("pointermove", onMove);
+    return () => { window.removeEventListener("pointermove", onMove); cancelAnimationFrame(raf); };
+  }, []);
   return (
-    <div className="land-video-bg land-aurora" aria-hidden="true">
+    <div ref={ref} className="land-video-bg land-aurora" aria-hidden="true">
       <span className="land-aurora-blob b1" />
       <span className="land-aurora-blob b2" />
       <span className="land-aurora-blob b3" />
+      <span className="land-aurora-ring" />
       <span className="land-aurora-grid" />
+      <span className="land-aurora-cursor" />
+      {PARTICLES.map((p, i) => (
+        <span
+          key={i}
+          className="land-particle"
+          style={{
+            left: `${p.left}%`, width: p.size, height: p.size,
+            animationDelay: `${p.delay}s`, animationDuration: `${p.dur}s`,
+            ["--drift" as string]: `${p.drift}px`,
+          } as React.CSSProperties}
+        />
+      ))}
     </div>
   );
 }

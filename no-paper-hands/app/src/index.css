@@ -442,43 +442,86 @@ tbody tr:hover { background: var(--surface2); }
   pointer-events: none;
 }
 /* Animated aurora (replaces the old hosted video) */
-.land-aurora { overflow: hidden; background: #0b0910; }
+.land-aurora { overflow: hidden; background: #0b0910; --mx: 50%; --my: 40%; }
 .land-aurora-blob {
   position: absolute; border-radius: 50%;
-  filter: blur(90px); opacity: .55;
+  filter: blur(80px); mix-blend-mode: screen;
   will-change: transform;
 }
 .land-aurora-blob.b1 {
-  width: 55vw; height: 55vw; left: -10vw; top: -15vw;
-  background: radial-gradient(circle, #9945FF 0%, transparent 65%);
-  animation: aurora1 18s ease-in-out infinite alternate;
+  width: 55vw; height: 55vw; left: -8vw; top: -18vw; opacity: .75;
+  background: radial-gradient(circle, #9945FF 0%, transparent 62%);
+  animation: aurora1 11s ease-in-out infinite;
 }
 .land-aurora-blob.b2 {
-  width: 50vw; height: 50vw; right: -12vw; top: 5vw;
-  background: radial-gradient(circle, #14F195 0%, transparent 65%);
-  opacity: .4;
-  animation: aurora2 22s ease-in-out infinite alternate;
+  width: 50vw; height: 50vw; right: -10vw; top: 0; opacity: .6;
+  background: radial-gradient(circle, #14F195 0%, transparent 62%);
+  animation: aurora2 13s ease-in-out infinite;
 }
 .land-aurora-blob.b3 {
-  width: 45vw; height: 45vw; left: 25vw; bottom: -20vw;
-  background: radial-gradient(circle, #4f7bff 0%, transparent 65%);
-  opacity: .45;
-  animation: aurora3 26s ease-in-out infinite alternate;
+  width: 48vw; height: 48vw; left: 22vw; bottom: -22vw; opacity: .6;
+  background: radial-gradient(circle, #4f7bff 0%, transparent 62%);
+  animation: aurora3 15s ease-in-out infinite;
+}
+.land-aurora-ring {
+  position: absolute; left: 50%; top: 45%;
+  width: 70vmax; height: 70vmax; margin: -35vmax 0 0 -35vmax;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 60%, rgba(153,69,255,.22) 72%, rgba(20,241,149,.22) 84%, transparent 96%);
+  filter: blur(40px);
+  animation: auroraSpin 16s linear infinite;
 }
 .land-aurora-grid {
-  position: absolute; inset: 0;
+  position: absolute; inset: -64px;
   background-image:
-    linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+    linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
   background-size: 64px 64px;
-  mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+  mask-image: radial-gradient(ellipse at center, #000 25%, transparent 72%);
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 25%, transparent 72%);
+  animation: gridPan 6s linear infinite;
 }
-@keyframes aurora1 { to { transform: translate(18vw, 12vw) scale(1.15); } }
-@keyframes aurora2 { to { transform: translate(-20vw, 10vw) scale(.9); } }
-@keyframes aurora3 { to { transform: translate(-15vw, -14vw) scale(1.2); } }
+.land-aurora-cursor {
+  position: absolute; left: 0; top: 0;
+  width: 520px; height: 520px; margin: -260px 0 0 -260px;
+  transform: translate(var(--mx), var(--my));
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(153,69,255,.28) 0%, rgba(20,241,149,.12) 35%, transparent 65%);
+  transition: transform .25s ease-out;
+  mix-blend-mode: screen;
+}
+.land-particle {
+  position: absolute; bottom: -10px; border-radius: 50%;
+  background: #fff; box-shadow: 0 0 8px 2px rgba(153,69,255,.7);
+  opacity: 0;
+  animation-name: particleRise; animation-timing-function: linear; animation-iteration-count: infinite;
+}
+.land-particle:nth-child(3n) { box-shadow: 0 0 8px 2px rgba(20,241,149,.7); }
+@keyframes aurora1 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33% { transform: translate(22vw, 14vw) scale(1.2); }
+  66% { transform: translate(8vw, 28vw) scale(.9); }
+}
+@keyframes aurora2 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33% { transform: translate(-24vw, 18vw) scale(.85); }
+  66% { transform: translate(-8vw, -6vw) scale(1.2); }
+}
+@keyframes aurora3 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  50% { transform: translate(-20vw, -20vw) scale(1.25); }
+}
+@keyframes auroraSpin { to { transform: rotate(360deg); } }
+@keyframes gridPan { to { transform: translate(64px, 64px); } }
+@keyframes particleRise {
+  0% { transform: translate(0, 0); opacity: 0; }
+  10% { opacity: .9; }
+  90% { opacity: .6; }
+  100% { transform: translate(var(--drift), -105vh); opacity: 0; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .land-aurora-blob { animation: none; }
+  .land-aurora-blob, .land-aurora-ring, .land-aurora-grid, .land-particle { animation: none; }
+  .land-particle { display: none; }
 }
 .land-video-overlay {
   position: absolute; inset: 0;
