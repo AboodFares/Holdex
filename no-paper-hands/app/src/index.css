@@ -441,6 +441,45 @@ tbody tr:hover { background: var(--surface2); }
   object-fit: cover;
   pointer-events: none;
 }
+/* Animated aurora (replaces the old hosted video) */
+.land-aurora { overflow: hidden; background: #0b0910; }
+.land-aurora-blob {
+  position: absolute; border-radius: 50%;
+  filter: blur(90px); opacity: .55;
+  will-change: transform;
+}
+.land-aurora-blob.b1 {
+  width: 55vw; height: 55vw; left: -10vw; top: -15vw;
+  background: radial-gradient(circle, #9945FF 0%, transparent 65%);
+  animation: aurora1 18s ease-in-out infinite alternate;
+}
+.land-aurora-blob.b2 {
+  width: 50vw; height: 50vw; right: -12vw; top: 5vw;
+  background: radial-gradient(circle, #14F195 0%, transparent 65%);
+  opacity: .4;
+  animation: aurora2 22s ease-in-out infinite alternate;
+}
+.land-aurora-blob.b3 {
+  width: 45vw; height: 45vw; left: 25vw; bottom: -20vw;
+  background: radial-gradient(circle, #4f7bff 0%, transparent 65%);
+  opacity: .45;
+  animation: aurora3 26s ease-in-out infinite alternate;
+}
+.land-aurora-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+}
+@keyframes aurora1 { to { transform: translate(18vw, 12vw) scale(1.15); } }
+@keyframes aurora2 { to { transform: translate(-20vw, 10vw) scale(.9); } }
+@keyframes aurora3 { to { transform: translate(-15vw, -14vw) scale(1.2); } }
+@media (prefers-reduced-motion: reduce) {
+  .land-aurora-blob { animation: none; }
+}
 .land-video-overlay {
   position: absolute; inset: 0;
   background: linear-gradient(

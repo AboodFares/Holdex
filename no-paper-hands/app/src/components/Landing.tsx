@@ -1,10 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Hls from "hls.js";
 import { AuthModal } from "./AuthModal";
 import { useAuth } from "../context/AuthContext";
 
-const HLS_SRC = "https://stream.mux.com/4IMYGcL01xjs7ek5ANO17JC4VQVUTsojZlnw4fXzwSxc.m3u8";
 
 const FAQS = [
   {
@@ -34,20 +32,14 @@ const FAQS = [
 ];
 
 function VideoBackground() {
-  const ref = useRef<HTMLVideoElement>(null);
-  useEffect(() => {
-    const video = ref.current;
-    if (!video) return;
-    if (Hls.isSupported()) {
-      const hls = new Hls();
-      hls.loadSource(HLS_SRC);
-      hls.attachMedia(video);
-      return () => hls.destroy();
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = HLS_SRC;
-    }
-  }, []);
-  return <video ref={ref} className="land-video-bg" autoPlay muted loop playsInline />;
+  return (
+    <div className="land-video-bg land-aurora" aria-hidden="true">
+      <span className="land-aurora-blob b1" />
+      <span className="land-aurora-blob b2" />
+      <span className="land-aurora-blob b3" />
+      <span className="land-aurora-grid" />
+    </div>
+  );
 }
 
 function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
