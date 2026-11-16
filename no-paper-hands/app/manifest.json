@@ -9,8 +9,7 @@
   },
   "permissions": ["storage"],
   "host_permissions": [
-    "https://*.helius-rpc.com/*",
-    "https://api.helius.xyz/*",
+    "https://holdex-beta.vercel.app/*",
     "https://api.dexscreener.com/*",
     "https://*.supabase.co/*",
     "https://tokens.jup.ag/*",

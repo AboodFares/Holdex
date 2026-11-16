@@ -9,7 +9,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     define: {
-      "import.meta.env.VITE_HELIUS_KEY":     JSON.stringify(env.VITE_HELIUS_KEY),
+      // The extension popup has no server of its own, so it routes RPC/Helius
+      // calls through the deployed site's proxy (key stays server-side).
+      "import.meta.env.VITE_PROXY_BASE":     JSON.stringify(env.VITE_PROXY_BASE || "https://holdex-beta.vercel.app"),
       "import.meta.env.VITE_SUPABASE_URL":   JSON.stringify(env.VITE_SUPABASE_URL),
       "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(env.VITE_SUPABASE_ANON_KEY),
     },
