@@ -3,10 +3,11 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { Connection } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import type { TokenInfo } from "../types";
+import { RPC_URL } from "../lib/rpc";
 
-const RPC_ENDPOINT = import.meta.env.DEV
-  ? `${window.location.origin}/rpc`
-  : `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_KEY}`;
+// Always route through the same-origin proxy so the Helius key stays
+// server-side (Vite dev proxy in dev, Vercel function /api/rpc in prod).
+const RPC_ENDPOINT = RPC_URL;
 
 const DEXSCREENER_URL = "https://api.dexscreener.com/tokens/v1/solana";
 const WSOL_MINT       = "So11111111111111111111111111111111111111112";

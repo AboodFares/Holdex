@@ -7,8 +7,9 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 import { AuthProvider } from "./context/AuthContext";
 import { Dashboard } from "./components/Dashboard";
 import "./index.css";
+import { RPC_URL } from "./lib/rpc";
 
-const RPC = `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_KEY}`;
+const RPC = RPC_URL;
 
 function Popup() {
   const wallets = useMemo(() => [new PhantomWalletAdapter()], []);

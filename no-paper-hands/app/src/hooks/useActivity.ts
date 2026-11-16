@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { heliusTxUrl } from "../lib/rpc";
 
-const HELIUS_KEY      = import.meta.env.VITE_HELIUS_KEY as string;
 const DEXSCREENER_URL = "https://api.dexscreener.com/tokens/v1/solana";
 const LOCK_PROGRAM_ID = "ErTKtbuVhqLH8fp4Kp38ek8cRBJvN79eDk4E6Qc3QtZw";
 const WSOL_MINT       = "So11111111111111111111111111111111111111112";
@@ -67,9 +67,7 @@ export function useActivity() {
     setError(null);
     const wallet = publicKey.toBase58();
     try {
-      const res = await fetch(
-        `https://api.helius.xyz/v0/addresses/${wallet}/transactions?api-key=${HELIUS_KEY}&limit=50`
-      );
+      const res = await fetch(heliusTxUrl(wallet, 50));
       if (!res.ok) throw new Error(`Activity fetch failed: ${res.status}`);
       const txs: HeliusTx[] = await res.json();
       if (!Array.isArray(txs)) { setItems([]); return; }
